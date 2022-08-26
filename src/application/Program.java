@@ -1,29 +1,47 @@
 package application;
 
 import db.DB;
+import db.DbException;
 import db.DbIntegrityException;
 
-import java.sql.*;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 public class Program {
     public static void main(String[] args) {
         Connection conn = null;
-        PreparedStatement statement = null;
+        Statement statement = null;
         try {
             conn = DB.getConnection();
-            statement = conn.prepareStatement(
-                    "DELETE FROM department " +
-                            "WHERE " +
-                            "Id = ?");
+            conn.setAutoCommit(false);
+            statement = conn.createStatement();
 
-            statement.setInt(1, 5);
+            int rows1 = statement.executeUpdate(
+                    "UPDATE seller " +
+                            "SET BaseSalary = 2090 " +
+                            "WHERE DepartmentId = 1");
 
-            int rowAffected = statement.executeUpdate();
-            System.out.println("Done! Rows Affected: " + rowAffected);
+//            int x = 1;
+//            if (x < 2) {
+//                throw new SQLException("Fake Error");
+//            }
+            int rows2 = statement.executeUpdate(
+                    "UPDATE seller " +
+                            "SET BaseSalary = 3090 " +
+                            "WHERE DepartmentId = 2");
+
+            conn.commit();
+            System.out.println("rows1: " + rows1);
+            System.out.println("rows2: " + rows2);
+
         } catch (SQLException e) {
-            throw new DbIntegrityException(e.getMessage());
+            try {
+                conn.rollback();
+                throw new DbException("Trasaction rolled back! caused by: " + e.getMessage());
+            } catch (SQLException ex) {
+                throw new DbException("Error trying to rollback! Caused by:" + ex.getMessage());
+            }
         } finally {
             DB.closeStatement(statement);
             DB.closeConnection();
